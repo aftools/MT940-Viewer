@@ -9,9 +9,9 @@
 
 <link rel="stylesheet" type="text/css" href="MT940_Viewer.css" />
 
-<script src="script/helperModels_.js"></script>
-<script src="script/tags_.js"></script>
-<script src="script/parser_.js"></script>
+<script src="js/helperModels_.js"></script>
+<script src="js/tags_.js"></script>
+<script src="js/parser_.js"></script>
 
 <script>
 
@@ -20,7 +20,7 @@ function currencyFormat (num) {
       return num
        .toFixed(2) // always two decimal digits
        .replace(".", ",") // replace decimal point character with ,
-       .replace(/(\\d)(?=(\\d{3})+(?!\\d))/g, "$1.") // use . as a separator
+       .replace(/(\\d)(?=(\\d{3})+(?!\\d))/g, "$1.") // use . as thousand separator
 }
 
 function numberFormat(num) {
