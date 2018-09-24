@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<!-- Project MT940 bron: https://github.com/a-fas/mt940js -->
+<!-- OpenFile demo. Bron: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications -->
+
+<title>MT940 Viewer</title>
+
+<link rel="stylesheet" type="text/css" href="MT940_Viewer.css" />
+
+<script src="script/helperModels_.js"></script>
+<script src="script/tags_.js"></script>
+<script src="script/parser_.js"></script>
+
+<script>
+
+
+function currencyFormat (num) {
+      return num
+       .toFixed(2) // always two decimal digits
+       .replace(".", ",") // replace decimal point character with ,
+       .replace(/(\\d)(?=(\\d{3})+(?!\\d))/g, "$1.") // use . as a separator
+}
+
+function numberFormat(num) {
+    var parts=num.toFixed(2).split(".");
+    return parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".") + (parts[1] ? "," + parts[1] : "");
+}
+
+
+function nieuweRijInTabel(tbl, tkst1="", tkst2="", tkst3="" ) {
+    var row = tbl.insertRow(-1);
+    var cell1 = row.insertCell(0);
+    cell1.innerHTML = tkst1;
+    if (tkst2.length>0) {
+        var cell2 = row.insertCell(1);
+        cell2.innerHTML = tkst2;
+    }
+    if (tkst3.length>0) {
+        var cell3 = row.insertCell(2);
+        cell3.innerHTML = tkst3;
+    }
+}
+
+function logMT940(file){
+
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const parser = new Parser();
+    const statements = parser.parse(reader.result);
+    var table = document.getElementById("afschriften");
+    while (table.rows.length>0) { table.deleteRow(0); }
+    for (let s of statements) {
+      console.log("Bankafschrift: ", s.number.statement, "Datum: ", s.statementDate);
+
+      nieuweRijInTabel(table, "Bankafschrift: ");
+      nieuweRijInTabel(table, "Bankafschrift Beginsaldo: ", numberFormat(s.openingBalance), s.currency );
+
+      // :60: openingBalanceDate - tag 60 statement opening date
+      nieuweRijInTabel(table, "Bankafschrift Begindatum: ".concat(s.statementDate) );
+
+      // :28: statement - tag 28 main statement number
+      nieuweRijInTabel(table, "Bankafschrift Nummer: ".concat(s.statement) );
+      console.log("Bankafschrift Beginsaldo: ", numberFormat(s.openingBalance), s.currency);
+
+      for (let t of s.transactions) {
+
+        // date - transaction date
+        nieuweRijInTabel(table," - TransactieDatum: ".concat(t.date) );
+     
+        // amount - transaction amount (with sign, Credit+, Debit-)
+        // currency - transaction currency (copy of statement currency)
+        // Amount en Currency
+        nieuweRijInTabel(table, " - Transactie: ", numberFormat(t.amount), t.currency );
+        
+        // :86: details - content of relevant 86 tag(s), may be multiline (`\n` separated)
+        nieuweRijInTabel(table, t.details );
+
+        // :?: transactionType - MT940 transaction type code (e.g. NTRF ...)
+        nieuweRijInTabel(table, t.transactionType );
+
+        // :?: reference - payment reference field
+        nieuweRijInTabel(table, t.reference );
+
+        // entryDate - optional, entry date field
+        nieuweRijInTabel(table, t.entryDate );
+
+        // fundsCode - optional, funds code field
+        nieuweRijInTabel(table, t.fundsCode );
+
+        // bankReference - optional, bank reference
+        nieuweRijInTabel(table, t.bankReference );
+
+        // extraDetails - optional, extra details
+        nieuweRijInTabel(table, t.extraDetails );
+        
+
+
+        console.log("Transactie: ", numberFormat(t.amount), t.currency);
+        console.log("Transactie Reference: ", t.reference);
+        console.log("Transactie Description: ", t.details);
+      }
+      // closingBalance - ending balance of the statement
+      nieuweRijInTabel(table, "Bankafschrift Eindsaldo: ", numberFormat(s.closingBalance), s.currency );
+      console.log("Bankafschrift Eindsaldo: ", numberFormat(s.closingBalance), s.currency);
+      console.log("-------------------------------------------------------");
+    }
+  };
+
+  reader.readAsText(file, 'utf8');
+
+}
+
+
+
+
+function updateSize() {
+  var oFiles = document.getElementById("uploadInput").files,
+      nFiles = oFiles.length;
+  for (var nFileId = 0; nFileId < nFiles; nFileId++) {
+    logMT940(oFiles[nFileId]);
+  }
+}
+
+
+</script>
+</head>
+
+<body>
+
+<h1>MT940 Viewer</h1>
+<br>
+
+<div class="helptekst">
+Open een MT940 bestand met de knop 'bladeren'<br>
+</div>
+<form name="uploadForm">
+<p><input id="uploadInput" type="file" name="myFiles" onchange="updateSize();" multiple> selected files: <span id="fileNum">0</span></p>
+</form>
+
+<p>Zogenaamde 'hidden' input ?? </p>
+<!-- input type="file" id="fileElem" multiple style="display:none" onchange="updateSize(this.files)" -->
+<button id="fileSelect">Select files</button>
+<br>
+
+<div class="helptekst">
+of sleep een MT940 bestand naar de 'dropzone' hier onder<br>
+</div>
+<!-- <div id="dropZone" style="width: 100px; height: 100px; border-color: #0000FF border:dashed; background-color:red" > -->
+<div id="dropZone" style="width: 300px; height: 100px; ">
+<br>
+
+</div>
+<br>
+
+<div style="overflow-x:auto;">
+
+<table id="afschriften">
+  <tr>
+    <td>Row1 cell1</td>
+    <td>Row1 cell2</td>
+  </tr>
+  <tr>
+    <td>Row2 cell1</td>
+    <td>Row2 cell2</td>
+  </tr>
+  <tr>
+    <td>Row3 cell1</td>
+    <td>Row3 cell2</td>
+  </tr>
+</table>
+</div>
+
+<br>
+
+</body>
+
+<script>
+
+// Code voor initialiseren 'hidden' input ??
+var fileSelect = document.getElementById("fileSelect"),
+  fileElem = document.getElementById("fileElem");
+
+fileSelect.addEventListener("click", function (e) {
+  if (fileElem) {
+    fileElem.click();
+  }
+}, false);
+
+
+// drag drop file. bron: https://stackoverflow.com/questions/10261989/html5-javascript-drag-and-drop-file-from-external-window-windows-explorer
+var dropZone = document.getElementById('dropZone');
+
+// Optional.   Show the copy icon when dragging over.  Seems to only work for chrome.
+dropZone.addEventListener('dragover', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+});
+
+// Get file data on drop
+dropZone.addEventListener('drop', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    var files = e.dataTransfer.files; // Array of all files
+    for (var i=0, file; file=files[i]; i++) {
+    	logMT940(file);
+    }
+});
+
+
+</script>
+
+
+</html>
