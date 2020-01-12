@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>MT940 Viewer</title>
+<!-- Project MT940 bron: https://github.com/a-fas/mt940js -->
+<!-- OpenFile demo. Bron: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" type="text/css" href="lib\w3.css">
+<link rel="stylesheet" type="text/css" href="lib\w3-theme-blue.css">
+<link rel="stylesheet" type="text/css" href="MT940_Viewer.css" />
+
+<script src="js/helperModels_.js"></script>
+<script src="js/tags_.js"></script>
+<script src="js/parser_.js"></script>
+
+<script>
+
+
+function currencyFormat (num) {
+      return num
+       .toFixed(2) // always two decimal digits
+       .replace(".", ",") // replace decimal point character with ,
+       .replace(/(\\d)(?=(\\d{3})+(?!\\d))/g, "$1.") // use . as thousand separator
+}
+
+function numberFormat(num) {
+    var parts=num.toFixed(2).split(".");
+    return parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".") + (parts[1] ? "," + parts[1] : "");
+}
+
+
+function nieuweRijInTabel(tbl, tkst1="", tkst2="", tkst3="" ) {
+    var row = tbl.insertRow(-1);
+    var cell1 = row.insertCell(0);
+    cell1.innerHTML = tkst1;
+    if (tkst2.length>0) {
+        var cell2 = row.insertCell(1);
+        cell2.innerHTML = tkst2;
+    }
+    if (tkst3.length>0) {
+        var cell3 = row.insertCell(2);
+        cell3.innerHTML = tkst3;
+    }
+}
+
+function logMT940(file){
+
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const parser = new Parser();
+    const statements = parser.parse(reader.result);
+    var table = document.getElementById("afschriften");
+    while (table.rows.length>0) { table.deleteRow(0); }
+    for (let s of statements) {
+      console.log("Bankafschrift: ", s.number.statement, "Datum: ", s.statementDate.toISOString().slice(0, 10) );
+
+      nieuweRijInTabel(table, "Bankafschrift: ");
+      nieuweRijInTabel(table, "Bankafschrift Beginsaldo: ", numberFormat(s.openingBalance), s.currency );
+
+      // :60: openingBalanceDate - tag 60 statement opening date
+      nieuweRijInTabel(table, "Bankafschrift Begindatum: ".concat(s.statementDate.toISOString().slice(0, 10) ) );
+
+      // :28: statement - tag 28 main statement number
+      nieuweRijInTabel(table, "Bankafschrift Nummer: ".concat(s.statement) );
+      console.log("Bankafschrift Beginsaldo: ", numberFormat(s.openingBalance), s.currency);
+
+      for (let t of s.transactions) {
+
+        // date - transaction date
+        nieuweRijInTabel(table," - TransactieDatum: ".concat(t.date.toISOString().slice(0, 10) ) );
+     
+        // amount - transaction amount (with sign, Credit+, Debit-)
+        // currency - transaction currency (copy of statement currency)
+        // Amount en Currency
+        nieuweRijInTabel(table, " - Transactie: ", numberFormat(t.amount), t.currency );
+        
+        // :86: details - content of relevant 86 tag(s), may be multiline (`\n` separated)
+        nieuweRijInTabel(table, t.details );
+
+        // :?: transactionType - MT940 transaction type code (e.g. NTRF ...)
+        nieuweRijInTabel(table, t.transactionType );
+
+        // :?: reference - payment reference field
+        nieuweRijInTabel(table, t.reference );
+
+        // entryDate - optional, entry date field
+        nieuweRijInTabel(table, t.entryDate.toISOString().slice(0, 10) );
+
+        // fundsCode - optional, funds code field
+        nieuweRijInTabel(table, t.fundsCode );
+
+        // bankReference - optional, bank reference
+        nieuweRijInTabel(table, t.bankReference );
+
+        // extraDetails - optional, extra details
+        nieuweRijInTabel(table, t.extraDetails );
+        
+
+
+        console.log("Transactie: ", numberFormat(t.amount), t.currency);
+        console.log("Transactie Reference: ", t.reference);
+        console.log("Transactie Description: ", t.details);
+      }
+      // closingBalance - ending balance of the statement
+      nieuweRijInTabel(table, "Bankafschrift Eindsaldo: ", numberFormat(s.closingBalance), s.currency );
+      console.log("Bankafschrift Eindsaldo: ", numberFormat(s.closingBalance), s.currency);
+      console.log("-------------------------------------------------------");
+    }
+  };
+
+  reader.readAsText(file, 'utf8');
+
+}
+
+
+
+
+function updateSize() {
+  var oFiles = document.getElementById("uploadInput").files,
+      nFiles = oFiles.length;
+  for (var nFileId = 0; nFileId < nFiles; nFileId++) {
+    logMT940(oFiles[nFileId]);
+  }
+}
+
+
+
+/* Functies voor het selecteren van de TABS */
+/* Gebaseerd op: https://www.w3schools.com/w3css/w3css_tabulators.asp */
+function openTab(evt, tabName) {
+	// Declare all variables
+	var i, tabinhoud, tablinks;
+	// Get all elements with class="tabinhoud" and hide them
+	tabinhoud = document.getElementsByClassName("tabinhoud");
+	for (i = 0; i < tabinhoud.length; i++) {
+		tabinhoud[i].style.display = "none";
+	}
+	// Get all elements with class="tablink" and remove the class "active"
+	tablinks = document.getElementsByClassName("tablink");
+	for (i = 0; i < tablinks.length; i++) {
+		//tablinks[i].className = tablinks[i].className.replace(" active", "");
+		tablinks[i].className = tablinks[i].className.replace("w3-theme-l2", "w3-theme-l4");
+	}
+	// Show the current tab, and add an "active" class to the button that opened the tab
+	document.getElementById(tabName).style.display = "block";
+	//evt.currentTarget.className += " active";
+	evt.currentTarget.className = evt.currentTarget.className.replace("w3-theme-l4", "w3-theme-l2");
+}
+
+
+/* Functie voor Accordeon */
+/* Gebaseerd op: https://www.w3schools.com/w3css/w3css_accordions.asp */
+function accordeon(id) {
+	var x = document.getElementById(id);
+	if (x.className.indexOf("w3-show") == -1) {
+		x.className += " w3-show";
+		x.previousElementSibling.className =
+		x.previousElementSibling.className.replace("w3-theme-l4", "w3-theme-l2");
+		x.previousElementSibling.className += " actief";
+	} else {
+		x.className = x.className.replace(" w3-show", "");
+		x.previousElementSibling.className =
+		x.previousElementSibling.className.replace("w3-theme-l2", "w3-theme-l4");
+		x.previousElementSibling.className = x.previousElementSibling.className.replace(" actief", "");
+	}
+}
+
+
+</script>
+</head>
+
+<body>
+
+<h1 style="display: inline;">MT940 Viewer</h1>
+<br>
+
+<div class="MT940naam top " id="MT940naam">
+  &nbsp; Open een MT940 bestand met de knop 'bladeren'<br>
+</div>
+
+<!-- Hoofdmenu, drie keuzen: Open, Analyse en Info -->
+<div class="w3-bar w3-theme-l4 nav ">
+  <button class="tablink w3-bar-item w3-button w3-border w3-theme-l4 w3-hover-theme active "   onclick="openTab(event, 'MT940_tab')">MT940 Bankafschrift</button>
+  <button class="tablink w3-bar-item w3-button w3-border w3-theme-l4 w3-hover-theme disabled " onclick="openTab(event, 'analyse_tab')">Analyses</button>
+  <button class="tablink w3-bar-item w3-button w3-border w3-theme-l4 w3-hover-theme "          onclick="openTab(event, 'info_tab')">Info</button>
+</div>
+
+
+
+
+
+
+
+<!-- Pagina 'Open MT940', kies een bestand, open het met JS library -->
+<div id="MT940_tab" class="tabinhoud w3-container " style="display: block">
+  <h3 style="display: inline;">MT940</h3>
+  <p>Info over de MT940 vind je op: 
+  <a href="https://ec.europa.eu/taxation_customs/business/vat/telecommunications-broadcasting-electronic-services_en#one_stop
+" target="_blank">ec.europa.eu</a></p>
+
+  <div id="MT940_inhoud">
+    <p>Open een MT940 bestand:</p>
+    <!-- <input type="file" id="files" name="files" accept=".MT940, .MT940, .XML, .xml" /> -->
+<form name="uploadForm" class="w3-btn w3-theme-l4 w3-round-xlarge w3-border ">
+<input id="uploadInput" type="file" name="myFiles" accept=".MT940, .MT940*, .TXT" onchange="updateSize();" multiple> selected files: <span id="fileNum">0</span>
+</form>
+<br>
+
+<div class="helptekst">
+of sleep een MT940 bestand naar de 'dropzone' hier onder<br>
+</div>
+<div id="dropZone" title="Dit is de 'dropzone' voor uw MT940 bestanden" style="width: 300px; height: 100px;" class="w3-btn w3-theme-l4 w3-round-xlarge w3-border ">
+<br>
+</div>
+<br>
+
+<div style="overflow-x:auto;">
+Dummy tabel als placeholder voor de MT940 data
+<table id="afschriften">
+  <tr>
+    <td>Row1 cell1</td>
+    <td>Row1 cell2</td>
+  </tr>
+  <tr>
+    <td>Row2 cell1</td>
+    <td>Row2 cell2</td>
+  </tr>
+  <tr>
+    <td>Row3 cell1</td>
+    <td>Row3 cell2</td>
+  </tr>
+</table>
+</div>
+
+<br>
+
+
+  </div>
+  <div id="MT940_voortgang"><p></p></div>
+
+
+
+
+
+
+</div> <!-- einde van de div 'MT940_tab' -->
+
+
+<!-- Pagina 'Analyse' serie submenu's met de aangeboden analyses op de XAF -->
+<div id="analyse_tab" class="tabinhoud w3-container " style="display:none">
+  <h3 style="display: inline;">Analyses</h3>
+
+  <div id="analyse_accordeon">
+
+  <!-- div analyse_accordeon. in deze div komen knoppen voor alle analyses. automatisch gegenereerd met script 'maak_accordeon' -->
+
+  </div> <!-- einde van de div 'analyse_accordeon' -->
+</div> <!-- einde van de div 'analyse_tab' -->
+
+
+<!-- Pagina 'Info' toon een help-tekst -->
+<div id="info_tab" class="tabinhoud w3-container " style="display:none">
+  <h3 style="display: inline;">Info</h3>
+  <p>Info over de MT940 vind je op: 
+  <a href="https://ec.europa.eu/taxation_customs/business/vat/telecommunications-broadcasting-electronic-services_en#one_stop
+" target="_blank">ec.europa.eu</a></p>
+  <p>Hier komt toelichting op </p>
+  <ul>
+    <li>het doel van dit project</li>
+    <li>gebruiksaanwijzing</li>
+    <li>de gebruikte techniek</li>
+    <li>verwijzing naar licentie en bron van gebruikte libraries</li>
+  </ul>
+  <p>...</p>
+</div> <!-- einde van de div 'info_tab' -->
+
+
+
+
+
+
+
+
+
+
+
+</body>
+
+<script>
+
+// Code voor initialiseren 'hidden' input ??
+/*
+var fileSelect = document.getElementById("fileSelect"),
+  fileElem = document.getElementById("fileElem");
+
+fileSelect.addEventListener("click", function (e) {
+  if (fileElem) {
+    fileElem.click();
+  }
+}, false);
+*/
+
+// drag drop file. bron: https://stackoverflow.com/questions/10261989/html5-javascript-drag-and-drop-file-from-external-window-windows-explorer
+var dropZone = document.getElementById('dropZone');
+
+// Optional.   Show the copy icon when dragging over.  Seems to only work for chrome.
+dropZone.addEventListener('dragover', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+});
+
+// Get file data on drop
+dropZone.addEventListener('drop', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    var files = e.dataTransfer.files; // Array of all files
+    for (var i=0, file; file=files[i]; i++) {
+    	logMT940(file);
+    }
+});
+
+
+</script>
+
+</html>

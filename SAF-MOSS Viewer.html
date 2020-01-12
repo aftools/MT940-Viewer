@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SAF-MOSS Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="lib\w3.css">
+<link rel="stylesheet" href="lib\w3-theme-blue.css">
+
+<style>
+/* hoogte van balken en knoppen reduceren */
+#accordeon_regel {
+		padding: 2px  16px;
+}
+</style>
+
+<style>
+
+/*
+ * {
+ *   font-family: "Arial", "Helvetica", sans-serif ;
+ * }
+ */
+
+
+
+/* Style voor filterveld bij tabellen */
+.filterInput {
+    background-image: url('/zoek.png'); /* Add a search icon to input */
+    background-position: 10px 12px; /* Position the search icon */
+    background-repeat: no-repeat; /* Do not repeat the icon image */
+    width: 100%; /* Full-width */
+    /*font-size: 16px; /* Increase font-size */
+    padding: 1px 1px 1px 1px; /* Add some padding */
+    border: 1px solid #ddd; /* Add a grey border */
+    margin-bottom: 1px; /* Add some space below the input */
+    margin-top: 10px;
+}
+
+/* Styles voor de Tabel ----------------------------------- */
+
+
+table, td, th {
+    /* border: 1px solid black; */
+    border: 1px solid #bfbfbf; /* Add a grey border */
+    padding: 0px 2px ;
+    margin: 0px;   /* zo weinig mogelijk ruimte in de cel */
+}
+
+table {
+    border-collapse: collapse;
+}
+
+th {
+		text-align: left;
+    background-color: #d5d5d5;
+}
+
+tr:nth-child(even){
+		/* background-color: #f2f2f2; */ /* 95% wit */
+		background-color: #e6ffe6; /* licht groene kleur */
+}
+
+tr:hover {
+		background-color: #e5e5e5 ;
+}
+
+/* Caption van tabel links uitlijnen en vet ? --------------- */
+
+caption {
+    text-align: left;
+	  font-weight: bold;
+}
+tfoot {
+	  font-weight: bold;
+}
+
+
+td.num {
+    text-align: right;
+}
+
+td.Neg {
+	color: red;
+}
+
+td.nul {
+  opacity: 0.2;
+}
+
+td.Verschil {
+	bacground-color: red;
+	color: black;
+}
+
+td.Ok {
+	bacground-color: green;
+	color: black;
+}
+
+
+/* Poging nul-waarden te onderdrukken. Bron: http://rpbouman.blogspot.nl/2015/04/css-tricks-for-conditional-formatting.html   */
+/* make the cells output the value of their data-value attribute */
+td:after {
+	content: attr(data-value);
+}
+/* hide the output if the data-value is equal to "0.00" */
+td[data-value="0.00"]:after {
+	content: "";
+}
+
+
+/* Styles voor de Tabel (SortTable) ----------------------------------- */
+/* - handje als muiscursor op de kolomtitel */
+table.sortable th {
+    cursor: pointer;
+}
+
+/* onderstrepen van kolomtitel als muis er boven staat */
+table.sortable th:hover {
+    color: black;
+    text-decoration: underline;
+}
+
+/* pijltej omhoog/omlaag toevoegen aan kolomtitel */
+table.sortable th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):not(.sorttable_nosort):after {
+    content: " \25B4\25BE" ;
+}
+
+
+/* Driehoekje bij de 'accordeon' regels plaatsen, als de regel 'open' is ----- */
+.actief:after {
+    content: " \25BC" ;
+}
+
+/* horizontaal scrollen van tabellen? (per div instellen) */
+.hor_scroll {
+    overflow-x: scroll;
+}
+
+/* hoogte van balken en knoppen reduceren (lukt kennelijk niet, de w3.css aangepast) ---------- */
+.w3-bar .w3-bar-item #accordeon_regel {
+		padding: 2px  16px;
+}
+
+/* hoogte van balken en knoppen reduceren ------------------ */
+#accordeon_regel {
+		padding: 2px  16px;
+}
+
+
+/* Rode/groene/gele rand bij melding 'error', 'ok' of 'hint' */
+p.error {
+     border-style: solid;
+     border-color: red;
+     border-width: 2px;
+}
+p.ok {
+     border-style: solid;
+     border-color: green;
+     border-width: 2px;
+}
+p.hint {
+     border-style: solid;
+     border-color: yellow;
+     border-width: 2px;
+}
+
+/* Icoontje bij zoekveld */
+input.zoekVeld {
+    /* background-image: url('zoek.png'); /* Add a search icon to input */
+
+    background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAABqUlEQVR42r3WzyvDcRzH8Y+vOHDkpBwpB46k3MwOfu0wLvgDyEEp/8DOrjat5MSJs7i4O7CaWClqshxELphf81QO65Vv7+++37ZXPVprfT7Py7e+c5VKxY+HMWSQwzMYn3xHBjF4cLXy+2ESFwiyC0xGDbdiE2G2idagYY0eIMoOJB4onMV/u0IKcQxgBIs4wjd02VrCE9C9YxXNcD6GcQPdRJCwh3M5WEYcLoBO6IN4Ds8Kx6BbM2KqB69yR8wKp+XANVrgarQu92xY4RM5kIILoVfuObXCJTkwChfSQ9U9j1b4U8L9EcL56ous8BOqNxQhXARj3GuFcxJeDhntwFfVPWdWOCPh45DhJbknbYXjYJEesHYU5Y64FfZwKYdu0RUw2oQdOX8Jzwr/moaugD4j2oZd6KZqeTttQVdGBoNogvvTjRWUoNsL8z4+hN/eUMQzrJWRtMIa30aY7UNfq0krrBIoIMgKSMDhM2jc+pc5jizyeAHjk+/IYlye3gWf+IwRjsKOa7ge5qHxD8xIuLFxCTc0nqhHTM1B46W6RjWu4UaZxR3uMfUDvUqknv4oBC4AAAAASUVORK5CYII=');
+    background-size:18px;
+
+
+
+    background-position: 10px center; /* Position the search icon */
+    background-repeat: no-repeat; /* Do not repeat the icon image */
+    padding: 3px 10px 3px 40px;
+}
+</style>
+
+
+<!-- Sarissa - multi browser XSLT Bron: https://sourceforge.net/projects/sarissa -->
+<script src="lib\sarissa\sarissa.js"></script>
+<script src="lib\sarissa\sarissa_ieemu_xpath.js"></script>
+<!-- SortTable - voor het sorteerbaar maken van tabellen Bron:kryogenix.org/code/browser/sorttable/ -->
+<script src="lib\sorttable\sorttable.js"></script>
+
+
+<!-- In plaats van Sortable de bibliotheek 'vanilla datatable' gebruiken, zie https://github.com/Mobius1/Vanilla-DataTables -->
+<!-- Neen, voorlopig niet. Heeft invloed op analyses
+<link href="lib\datatables\vanilla-dataTables.min.css" rel="stylesheet" type="text/css">
+<script src="lib\datatables\vanilla-dataTables.min.js" type="text/javascript"></script> 
+-->
+
+
+
+
+
+<!-- WeekNumber - voor het berekenen van weeknummers Bron: https://weeknumber.net/how-to/javascript -->
+<script src="lib\weeknumber\weeknumber.js"></script>
+<!-- Analyses uit 'AnalyticsLibrary.nl', poging tot implementatie in html/javascript -->
+<script src="analyse\MOSS_analyse.js"></script>
+<script src="analyse\A000n.js"></script>
+<script src="analyse\A001.js"></script>
+<script src="analyse\A002.js"></script>
+<script src="analyse\A003.js"></script>
+<script src="analyse\B004.js"></script>
+<script src="analyse\B010.js"></script>
+<script src="analyse\C007n.js"></script>
+<!-- ToDo: Zodra analyses beschikbaar komen, deze ook hier toevoegen -->
+
+
+<script>
+//<!-- Routines voor het inlezen (en transformeren) van een SAF-MOSS -->
+//<!-- met bibliotheek Sarissa.js geschikt voor verschillende browsers -->
+
+/* Functie voor het inlezen van de gekozen factuur (en transform) */
+function handleFileSelect(evt) {
+	var files = evt.target.files;
+	var file = files[0];
+	var fn=file.name;
+	var bestandNaam= fn.split('\\').pop().split('/').pop();
+	var ok=true;
+	console.log("Gekozen bestand: "+file.name);
+	console.log("Naam: "+bestandNaam);
+  var xmlDoc = Sarissa.getDomDocument();
+	var xslDoc = Sarissa.getDomDocument();
+	var resultaat;
+
+	// Zet de naam van de factuur in de kop
+	document.getElementById('MOSSnaam').innerHTML="&nbsp;"+bestandNaam;
+
+  MOSS_Lezen();
+  if (ok){
+		Xsl_Laden();
+ 	}
+	if(ok){
+		Xsl_Transformatie();
+	}
+	if(ok){
+		Html_PaginaBouwen();
+	}
+	if(ok){
+		Epiloog();
+	}
+	// Klaar.
+
+	function voortgang(stap, van, titel){
+		if (stap==1) {
+			doelVoortgang.appendChild(document.createTextNode("Voortgang:"));
+		}
+		doelVoortgang.appendChild(document.createTextNode("&nbsp; - stap "+stap+" van "+van+" : "+titel));
+	}
+
+
+  function MOSS_Lezen(){
+		// ToDo: Aanpassen naar voorbeeld van https://developer.mozilla.org/en-US/docs/Web/XSLT/XSLT_JS_interface_in_Gecko/Basic_Example
+		//       gebruikt xhttmlrequest in plaats van .load
+		//       is weliswaar oud en voor Gecko, maar zal ook voor Sarissa op dezelfde manier werken.
+
+		// create DOM Document containing XML document
+		xmlDoc = Sarissa.getDomDocument();
+		xmlDoc.async=false;
+		xmlDoc.load(fn);
+		if(xmlDoc.parseError.errorCode != 0){
+			// report parsing errors
+			window.alert(Sarissa.getParseErrorText(xmlDoc));
+			ok=false;
+			return;
+		}
+	}
+
+	function Xsl_Laden(){
+		// Als ik nu de factuur versie ken, kan de juiste (2.1 of 2.0) XSL worden gekozen.
+		var afVersieString = xmlDoc.documentElement.namespaceURI;
+		var versieAf, MOSSXsl;
+		console.log("NamespaceURI: "+afVersieString);
+//		if(afVersieString.indexOf("2.1")>0){
+			versieAf = "2.1";
+			MOSSXsl  = "XSL_MOSS.xsl";
+//		} else if(afVersieString.indexOf("2.0")>0){
+			versieAf = "2.0";
+			MOSSXsl  = "XSL_MOSS.xsl";
+//		} else {
+//			// Oeps, geen goede factuur. en nu? Afbreken.
+//			window.alert("Geen MOSS 2.1 of 2.0. \nDit bestand kan ik niet verwerken.");
+//			ok=false;
+//			return;
+//		}
+//		 window.alert("Versie van SAF-MOSS is "+versieAf);
+		// create DOM Document containing an XSL stylesheet
+		xslDoc = Sarissa.getDomDocument();
+		xslDoc.async=false;
+		xslDoc.load(MOSSXsl);
+		if(xslDoc.parseError.errorCode != 0){
+			// report parsing errors
+			window.alert(Sarissa.getParseErrorText(xslDoc));
+			ok=false
+			return;
+		}
+	}
+
+  function Xsl_Transformatie(){
+		// Transform
+		// - create an instance of XSLTProcessor
+		var processor = new XSLTProcessor();
+		processor.importStylesheet(xslDoc);
+		// - transform and store the result as a new doc
+		resultaat = processor.transformToFragment(xmlDoc, document);
+		// heb de XSLTProcessor niet meer nodig
+		processor = null;
+	}
+
+  function Html_PaginaBouwen(){
+		// resultaat op de juiste wijze naar de div 'MOSS' kopiëren
+		var doel = document.getElementById('MOSS_inhoud');
+		doel.innerHTML = "";
+		doel.appendChild(resultaat);
+		// maak doelpagina horizontaal scrollbaar
+		if (doel.className.indexOf("hor_scroll") == -1) {
+			doel.className += " hor_scroll";
+		}
+	}
+
+
+	// Epiloog
+  function Epiloog(){
+		// Maak tab SAF-MOSS zichtbaar (er van uitgaande dat dit de eerste tab is)
+		document.getElementsByClassName('tabinhoud')[0].click();
+
+	  // Maak de tabellen sorteerbaar
+		maakTabellenSorteerbaar();
+
+		// Zet aantallen records in de inhoudsopgaaf
+		zetAantallenInInhoudsopgaaf();
+		
+		// markeer nullen
+		//markeerNullen();
+		// markeer de nullen in tabellen met class 'nul', zodat de weergave gestuurd kan worden (minder fel)
+		
+		
+		// in plaats van Sortable de bibliotheek 'vanilla datatable' gebruiken:
+		/* Neen, voorlopig niet. Heeft invloed op analyses
+		var dataTable = new DataTable("#trLine"); 
+		*/
+
+		
+	}
+
+}
+
+
+function maakTabellenSorteerbaar(){
+	// Tabellen sorteerbaar maken (sorttable.js)
+	// niet voor 'Header'
+	sorttable.makeSortable(document.getElementById('Customer'));
+	// niet voor 'ServiceTransactions'
+	sorttable.makeSortable(document.getElementById('ServiceTransaction'));
+	sorttable.makeSortable(document.getElementById('EvidenceforCustomerLocation'));
+	sorttable.makeSortable(document.getElementById('ServiceTran_Line'));
+	sorttable.makeSortable(document.getElementById('ServiceTran_Payment'));
+}
+
+function zetAantallenInInhoudsopgaaf(){
+	// Inhoudsopgaaf is tabel 'inhoudsopgaaf'
+	var inhoudsopgaaf = document.getElementById('inhoudsopgaaf');
+	var thead = inhoudsopgaaf.getElementsByTagName('thead');
+	thead[0].rows.item(0).cells.item(2).innerHTML = "Aantal records";
+
+	var aantalrijenInInhoudsopgaaf = inhoudsopgaaf.rows.length;
+	for (i=1; i<aantalrijenInInhoudsopgaaf; i++){
+		var tabelNaam = inhoudsopgaaf.rows.item(i).cells.item(0).innerText ; // Tabelnaam uit eerste kolom
+		var bronTabel=document.getElementById(tabelNaam);
+		if (bronTabel!==null){
+
+			var aantalRijen = bronTabel.rows.length;
+			//alert('Aantal rijen in tabel '+tabelNaam+' is '+aantalRijen );
+			var doel = inhoudsopgaaf.rows.item(i).cells.item(2);
+			if (doel.className.indexOf("num") > -1){
+				doel.innerText = ''+aantalRijen-1; // Aantal records naar derde kolom
+			}
+		}
+	}
+}
+
+
+function markeerNullen(){
+	// markeer de nullen in tabellen met class 'nul', zodat de weergave gestuurd kan worden (minder fel)
+	// niet voor 'Header'
+	markeerNullenSub(document.getElementById('Customer'));
+	// niet voor 'ServiceTransactions'
+	markeerNullenSub(document.getElementById('ServiceTransaction'));
+	markeerNullenSub(document.getElementById('EvidenceforCustomerLocation'));
+	markeerNullenSub(document.getElementById('ServiceTran_Line'));
+	markeerNullenSub(document.getElementById('ServiceTran_Payment'));
+}
+
+function markeerNullenSub(tabel){
+	if(tabel!=null){
+		var x = tabel.getElementsByTagName('td');
+		for (var i=0; i<x.length; i++){
+			if (x[i].innerHTML=='0.00')
+			x[i].classList.add("nul");
+		}
+	}
+}
+
+
+
+/* Functies voor het selecteren van de TABS */
+/* Gebaseerd op: https://www.w3schools.com/w3css/w3css_tabulators.asp */
+function openTab(evt, tabName) {
+	// Declare all variables
+	var i, tabinhoud, tablinks;
+	// Get all elements with class="tabinhoud" and hide them
+	tabinhoud = document.getElementsByClassName("tabinhoud");
+	for (i = 0; i < tabinhoud.length; i++) {
+		tabinhoud[i].style.display = "none";
+	}
+	// Get all elements with class="tablink" and remove the class "active"
+	tablinks = document.getElementsByClassName("tablink");
+	for (i = 0; i < tablinks.length; i++) {
+		//tablinks[i].className = tablinks[i].className.replace(" active", "");
+		tablinks[i].className = tablinks[i].className.replace("w3-theme-l2", "w3-theme-l4");
+	}
+	// Show the current tab, and add an "active" class to the button that opened the tab
+	document.getElementById(tabName).style.display = "block";
+	//evt.currentTarget.className += " active";
+	evt.currentTarget.className = evt.currentTarget.className.replace("w3-theme-l4", "w3-theme-l2");
+}
+
+
+/* Functie voor Accordeon */
+/* Gebaseerd op: https://www.w3schools.com/w3css/w3css_accordions.asp */
+function accordeon(id) {
+	var x = document.getElementById(id);
+	if (x.className.indexOf("w3-show") == -1) {
+		x.className += " w3-show";
+		x.previousElementSibling.className =
+		x.previousElementSibling.className.replace("w3-theme-l4", "w3-theme-l2");
+		x.previousElementSibling.className += " actief";
+	} else {
+		x.className = x.className.replace(" w3-show", "");
+		x.previousElementSibling.className =
+		x.previousElementSibling.className.replace("w3-theme-l2", "w3-theme-l4");
+		x.previousElementSibling.className = x.previousElementSibling.className.replace(" actief", "");
+	}
+}
+
+// Tabel filterbaar maken, bron: https://www.w3schools.com/howto/howto_js_filter_table.asp
+// Aangevult met parameters: Tabelnaam en Kolomtitel (of class) van de kolom waarin wordt gefilterd
+function filterTabel(tabelNaam, kolom, vergelijking) {
+	// Declare variables
+	var input, filterWaarde, table, th, tr, td, i, kolomNr;
+	input = document.getElementById("filterInput"+tabelNaam); // Veld met de filtervoorwaarde
+	filterWaarde = input.value.toUpperCase();
+	table = document.getElementById("tabel_"+tabelNaam); // Tabel waarin gefilterd moet worden
+	//alert("filterTabel "+tabelNaam+" - "+kolom);
+	// Zoek op basis van de waarde in 'kolom' naar de kolom waarop gefilterd moet worden
+	kolomNr=0;
+	var gevonden=false;
+	th = table.getElementsByTagName("thead")[0]; // de eerst gevonden header (kunnen er meer zijn?)
+	if (th!==null){
+		for (i = 0; i < th.rows.length; i++) {   // loop alle rijen in de header langs
+			for (j = 0; j < th.rows.item(i).cells.length; j++) {  // loop alle cellen in de rij af
+				td = th.rows.item(i).cells.item(j);
+				if (td.innerText.indexOf(kolom) > -1) { // Vergelijk de kolomtitel met de tekst in 'kolom'
+					kolomNr=j;
+					gevonden=true;
+					break;
+				} else if (td.className.indexOf(kolom) > -1){ // Vergelijk de classname met de tekst in 'kolom'
+					kolomNr=j;
+					gevonden=true;
+					break;
+				}
+			}
+			if (gevonden) { break; }
+		}
+		//alert("kolom is "+kolomNr);
+
+		// Kolom is nu bekend. Pas de filtervoorwaarde toe op de cellen.
+		tr = table.getElementsByTagName("tr"); // Selecteer de data-rijen in de tabel (tBody)
+		// Verschillende blokken op basis van vergelijkingswijze
+		switch (vergelijking) {
+			case "==": // is gelijk
+			// Loop through all table rows, and hide those who don't match the search query
+			for (i = 0; i < tr.length; i++) {
+				td = tr[i].getElementsByTagName("td")[kolomNr]; // selecteer het nummer van de kolom
+				if (td) {
+					if (td.innerHTML.toUpperCase()==filterWaarde) {
+						tr[i].style.display = "";
+					} else {
+						tr[i].style.display = "none";
+					}
+				}
+			}
+			break;
+			case "!=": // is NIET gelijk aan
+			// Loop through all table rows, and hide those who don't match the search query
+			for (i = 0; i < tr.length; i++) {
+				td = tr[i].getElementsByTagName("td")[kolomNr]; // selecteer het nummer van de kolom
+				if (td) {
+					if (td.innerHTML.toUpperCase()!=filterWaarde) {
+						tr[i].style.display = "";
+					} else {
+						tr[i].style.display = "none";
+					}
+				}
+			}
+			break;
+			default:
+			// Loop through all table rows, and hide those who don't match the search query
+			for (i = 0; i < tr.length; i++) {
+				td = tr[i].getElementsByTagName("td")[kolomNr]; // selecteer het nummer van de kolom
+				if (td) {
+					if (td.innerHTML.toUpperCase().indexOf(filterWaarde) > -1) {
+						tr[i].style.display = "";
+					} else {
+						tr[i].style.display = "none";
+					}
+				}
+			}
+		} // Einde 'Switch'
+	}
+}
+
+
+
+/* onLoad functies achter elkaar plakken */
+/* Bron: http://www.webreference.com/programming/javascript/onloads/index.html */
+/* gebruik: 
+   addLoadEvent(nameOfSomeFunctionToRunOnPageLoad);
+   addLoadEvent(function() {
+     // more code to run on page load 
+   });
+*/
+function addLoadEvent(func) {
+  var oldonload = window.onload;
+  if (typeof window.onload != 'function') {
+    window.onload = func;
+  } else {
+    window.onload = function() {
+      if (oldonload) {
+        oldonload();
+      }
+      func();
+    }
+  }
+}
+
+addLoadEvent(maak_accordeon_analyse); // Maak de inhoud van de tab Analyse aan. Script in 'MOSS_analyse.js'
+
+
+</script>
+</head>
+
+<!-- body onload="maak_accordeon_analyse()">  Maak de inhoud van de tab Analyse aan. Script in 'MOSS_analyse.js' -->
+<body>
+
+
+
+
+<div class="MOSSnaam top " id="MOSSnaam">
+  &nbsp; Open een SAF-MOSS
+</div>
+
+<!-- Hoofdmenu, drie keuzen: Open, Analyse en Info -->
+<div class="w3-bar w3-theme-l4 nav ">
+  <button class="tablink w3-bar-item w3-button w3-border w3-theme-l4 w3-hover-theme active "   onclick="openTab(event, 'MOSS_tab')">SAF-MOSS</button>
+  <button class="tablink w3-bar-item w3-button w3-border w3-theme-l4 w3-hover-theme disabled " onclick="openTab(event, 'analyse_tab')">Analyses</button>
+  <button class="tablink w3-bar-item w3-button w3-border w3-theme-l4 w3-hover-theme "          onclick="openTab(event, 'info_tab')">Info</button>
+</div>
+
+
+
+
+
+<!-- Pagina 'Open SAF-MOSS', kies een bestand, open het en pas XSL transformatie toe -->
+<div id="MOSS_tab" class="tabinhoud w3-container " style="display: block">
+  <h3 style="display: inline;">SAF-MOSS</h3>
+  <p>Info over de SAF-MOSS vind je op: 
+  <a href="https://ec.europa.eu/taxation_customs/business/vat/telecommunications-broadcasting-electronic-services_en#one_stop
+" target="_blank">ec.europa.eu</a></p>
+
+  <div id="MOSS_inhoud">
+    <p>Open een SAF-MOSS bestand:</p>
+    <input type="file" id="files" name="files" accept=".SAF-MOSS, .MOSS, .XML, .xml" class="w3-btn w3-theme-l4 w3-round-xlarge w3-border "/>
+    <script>
+      document.getElementById('files').addEventListener('change', handleFileSelect, false);
+    </script>
+  </div>
+  <div id="MOSS_voortgang"><p></p></div>
+
+</div> <!-- einde van de div 'MOSS_tab' -->
+
+
+<!-- Pagina 'Analyse' serie submenu's met de aangeboden analyses op de XAF -->
+<div id="analyse_tab" class="tabinhoud w3-container " style="display:none">
+  <h3 style="display: inline;">Analyses</h3>
+
+  <div id="analyse_accordeon">
+
+  <!-- div analyse_accordeon. in deze div komen knoppen voor alle analyses. automatisch gegenereerd met script 'maak_accordeon' -->
+
+  </div> <!-- einde van de div 'analyse_accordeon' -->
+</div> <!-- einde van de div 'analyse_tab' -->
+
+
+<!-- Pagina 'Info' toon een help-tekst -->
+<div id="info_tab" class="tabinhoud w3-container " style="display:none">
+  <h3 style="display: inline;">Info</h3>
+  <p>Info over de SAF-MOSS vind je op: 
+  <a href="https://ec.europa.eu/taxation_customs/business/vat/telecommunications-broadcasting-electronic-services_en#one_stop
+" target="_blank">ec.europa.eu</a></p>
+  <p>Hier komt toelichting op </p>
+  <ul>
+    <li>het doel van dit project</li>
+    <li>gebruiksaanwijzing</li>
+    <li>de gebruikte techniek</li>
+    <li>verwijzing naar licentie en bron van gebruikte libraries</li>
+  </ul>
+  <p>...</p>
+</div> <!-- einde van de div 'info_tab' -->
+
+
+
+
+</body>
+</html>
